@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<GridLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:padding="10dp"
+    android:columnCount="2"
+    android:paddingRight="10dp"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/text_real_name"
+        android:layout_row="1"
+        android:layout_column="0"
+        android:text="Real name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+    <EditText
+        android:id="@+id/input_real_name"
+        android:layout_row="1"
+        android:layout_column="1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+    <TextView
+        android:id="@+id/text_password"
+        android:layout_row="2"
+        android:layout_column="0"
+        android:text="New password"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+    <EditText
+        android:id="@+id/input_password"
+        android:layout_row="2"
+        android:layout_column="1"
+        android:inputType="textPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+    <TextView
+        android:id="@+id/text_admin_user"
+        android:layout_row="3"
+        android:layout_column="0"
+        android:text="Admin user"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+    <CheckBox
+        android:id="@+id/check_admin"
+        android:layout_row="3"
+        android:layout_column="1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+</GridLayout>

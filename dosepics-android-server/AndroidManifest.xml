@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="se.dose.dosepics" >
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.AppCompat" >
+        <activity
+            android:theme="@style/Theme.AppCompat.Light"
+            android:name=".ConfigurationActivity"
+            android:label="@string/title_activity_configuration">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="se.dose.dosepics.ConfigurationActivity" />
+        </activity>
+        <activity
+            android:name=".ShareActivity"
+            android:label="@string/title_activity_share"
+            android:theme="@style/Theme.AppCompat.Translucent" >
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".AdminUsersActivity"
+            android:label="@string/title_activity_admin"
+            android:theme="@style/Theme.AppCompat.Light" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="se.dose.dosepics.ConfigurationActivity" />
+        </activity>
+        <service
+            android:name=".RestService"
+            android:exported="false" >
+        </service>
+        <service
+            android:name=".UploadImageService"
+            android:exported="false" >
+        </service>
+        <activity
+            android:name=".ImageActivity"
+            android:label="@string/title_activity_image"
+            android:windowActionBarOverlay="true"
+            android:theme="@style/CustomActionBarTheme" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

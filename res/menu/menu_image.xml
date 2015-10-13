@@ -1,0 +1,10 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" tools:context="se.dose.dosepics.ImageActivity">
+    <item android:id="@+id/action_configure_dosepics" android:title="@string/action_configure_dosepics"
+        android:orderInCategory="100" app:showAsAction="never" />
+    <item android:id="@+id/action_share_link"
+        android:icon="@drawable/ic_share_white_24dp"
+      android:title="@string/action_share_link"
+      app:showAsAction="ifRoom" />
+</menu>

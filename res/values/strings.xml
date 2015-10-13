@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">Dose Pics</string>
+    <string name="settings">Settings</string>
+    <string name="action_new_user">New user</string>
+    <string name="action_user_administration">User administration</string>
+    <string name="defaults_button">Defaults</string>
+    <string name="apply_button">Apply</string>
+    <string name="admin_button">User administration</string>
+    <string name="ok_button">OK</string>
+    <string name="cancel_button">Cancel</string>
+    <string name="resource">Resource:</string>
+    <string name="username">Username:</string>
+    <string name="password">Password:</string>
+    <string name="enter_description">Description</string>
+    <string name="provide_description">Provide image description</string>
+    <string name="provide_notification">Put notification in status bar when uploading</string>
+    <string name="set_description_button">Set description</string>
+    <string name="default_resource">http://api.dose.se/dosepics</string>
+    <string name="default_username">guest</string>
+    <string name="default_password">guest</string>
+    <string name="title_activity_description">Description</string>
+    <string name="ticker_text">Tikkk</string>
+    <string name="new_user_button">New user</string>
+    <string name="title_activity_admin">User Administration</string>
+    <string name="title_activity_configuration">Dose Pics Configuration</string>
+    <string name="title_activity_share">DosePics</string>
+    <string name="delete_user_button">Delete user</string>
+    <string name="change_password_button">Change password</string>
+    <string name="title_activity_bklank_test">BklankTestActivity</string>
+    <string name="title_activity_image">Dosepics</string>
+    <string name="action_configure_dosepics">Configure Dosepics</string>
+    <string name="action_share_link">Share link</string>
+</resources>
