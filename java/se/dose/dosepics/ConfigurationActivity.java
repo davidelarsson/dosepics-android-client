@@ -12,14 +12,29 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
+/**
+ * An activity that sets up the configuration of the application. Called when
+ * the application is started the first time or when the user clicks "Configure
+ * Dosepics" in ImageActivity
+ */
+
 public class ConfigurationActivity extends AppCompatActivity  {
 
+    /**
+     * Called when the activity is starting. Entry point for the Activity
+     *
+     * @param savedInstanceState - not used
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         handleNormalStart();
     }
 
+    /**
+     * Help function to start the Activity. Gets the saved state of the widgets
+     * from SharedPreferences
+     */
     private void handleNormalStart()
     {
         setContentView(R.layout.activity_configuration);
@@ -51,6 +66,13 @@ public class ConfigurationActivity extends AppCompatActivity  {
         }
     }
 
+    /**
+     * Callback for the "Apply" button in the GUI.
+     *
+     * Saves the state of all the GUI widgets and finishes the Activity
+     *
+     * @param v - not used
+     */
     public void onApply(View v)
     {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
@@ -75,17 +97,31 @@ public class ConfigurationActivity extends AppCompatActivity  {
 
         Toast.makeText(getApplicationContext(), "Changes applied!",Toast.LENGTH_SHORT).show();
 
-        // Does this work?
         Intent i = new Intent(this, ImageActivity.class);
         i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(i);
+        finish();
     }
 
+    /**
+     * Callback for the "Cancel" button in the GUI.
+     *
+     * Just finishes the Activity
+     *
+     * @param v - not used
+     */
     public void onCancel(View v)
     {
         finish();
     }
 
+    /**
+     * Callback for the "Defaults" button in the GUI.
+     *
+     * Restores all the GUI widgets to their application-default state
+     *
+     * @param v - not used
+     */
     public void onDefaults(View v)
     {
         String default_resource = getString(R.string.default_resource);
@@ -104,6 +140,41 @@ public class ConfigurationActivity extends AppCompatActivity  {
         cb.setChecked(true);
     }
 
+    /**
+     * Manual quote:
+     * "Prepare the Screen's standard options menu to be displayed. This is
+     * "called right before the menu is shown, every time it is shown. You
+     * "can use this method to efficiently enable/disable items or otherwise
+     * "dynamically modify the contents."
+     *
+     * We don't want the user to be able to press the one and only options menu
+     * item "User administration" if she has not yet entered a username. Before
+     * this is done, we do not know what rights to give the user in
+     * AdminUsersActivity
+     *
+     * @param menu  The menu to be prepared
+     * @return true
+     */
+    @Override
+    public boolean onPrepareOptionsMenu (Menu menu) {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+
+        if (sp.contains("username"))
+            menu.getItem(0).setEnabled(true);
+        else
+            menu.getItem(0).setEnabled(false);
+
+        return true;
+    }
+
+    /**
+     * Manual Quote:
+     * "Initialize the contents of the Activity's standard options menu.
+     * We just supply the item(s) from the menu_configuration XML file
+     *
+     * @param menu
+     * @return true
+     */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -111,6 +182,13 @@ public class ConfigurationActivity extends AppCompatActivity  {
         return true;
     }
 
+    /**
+     * Manual quote:
+     * "This hook is called whenever an item in your options menu is selected."
+     *
+     * @param item
+     * @return
+     */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
@@ -121,5 +199,4 @@ public class ConfigurationActivity extends AppCompatActivity  {
         }
         return super.onOptionsItemSelected(item);
     }
-
 }

@@ -12,22 +12,38 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 
+/**
+ * A dialog shown in AdminUsersActivity to give the user the option to update
+ * hers or, if she has administrative rights, others users' information.
+ */
 public class UserInfoFragment extends DialogFragment {
 
-    private static final String ARG_USERNAME = "username";
+    // Info to be shown about the user
     private String username = "";
     private String realName = "";
     private boolean requestorIsAdmin = false;
 
+    /* Info about the user asking for information to be shown
+     * This is needed in order to provide the user with applicable buttons
+     * I.e., no need to show a "delete" button if the user has no rights to
+     * delete any user, etc. */
     private String requestorUser = "";
     private boolean isAdmin = false;
 
+    // Information to be sent back to caller in case the user decides to update information
     private String newPassword = "";
     private String newName = "";
     private boolean newAdminCheck = false;
 
     private UserInfoFragmentListener listener;
 
+
+    /**
+     * Create a Dialog with custom layout
+     *
+     * @param savedInstanceState - not used
+     * @return                  Created dialog
+     */
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,12 +55,11 @@ public class UserInfoFragment extends DialogFragment {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
 
+                    // Get info to be sent back to requestor
                     EditText et = (EditText) getDialog().findViewById(R.id.input_password);
                     newPassword = et.getText().toString();
-
                     et = (EditText) getDialog().findViewById(R.id.input_real_name);
                     newName = et.getText().toString();
-
                     CheckBox adminBox = (CheckBox) getDialog().findViewById(R.id.check_admin);
                     newAdminCheck = adminBox.isChecked();
 
@@ -72,6 +87,7 @@ public class UserInfoFragment extends DialogFragment {
                 }
             });
         }
+
         // Kinda pointless do have a delete button if we can't use it, right?
         if(requestorIsAdmin) {
             builder.setNeutralButton("Delete", new DialogInterface.OnClickListener() {
@@ -98,6 +114,8 @@ public class UserInfoFragment extends DialogFragment {
             });
         }
 
+        // For clarity's sake we call a listener that does nothing if the
+        // user clicks cancel
         builder.setNegativeButton("Back", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -105,6 +123,7 @@ public class UserInfoFragment extends DialogFragment {
             }
         });
 
+        // Create the custom Dialog
         builder.setTitle("About " + username);
 
         LayoutInflater inflater = getActivity().getLayoutInflater();
@@ -136,12 +155,20 @@ public class UserInfoFragment extends DialogFragment {
         return builder.create();
     }
 
+    /**
+     * Hook up listener
+     * @param activity
+     */
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         listener = (UserInfoFragmentListener) activity;
     }
 
+    /*
+     * Below are some setters that need to be called after creating and before
+     * showing UserInforFragment Dialog
+     */
     public void setRealName(String realName) {
         this.realName = realName;
     }
@@ -160,6 +187,7 @@ public class UserInfoFragment extends DialogFragment {
         this.requestorIsAdmin = requestorIsAdmin;
     }
 
+    // Listener interface
     public interface UserInfoFragmentListener {
         void onUserInfoUpdated(String userName, String realName, String password, boolean isAdmin);
         void onUserDeleted(String userName);

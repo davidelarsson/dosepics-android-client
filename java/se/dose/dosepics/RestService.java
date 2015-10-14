@@ -15,6 +15,10 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * A Service class that handles generic REST requests. Any authentication is
+ * done through HTTP Basic Authentication
+ */
 public class RestService extends IntentService {
 
     public static final String ACTION_DELETE = "se.dose.dosepics.action.DELETE";
@@ -43,8 +47,13 @@ public class RestService extends IntentService {
      * Below is a list of static help functions
      *************************************************************************************/
 
-    /*
+    /**
      * Static help function to start a POST action with username and password
+     *
+     * @param context   - context of the caller
+     * @param resource  - API base to use
+     * @param username  - Username of requestor
+     * @param password  - Password of requestor
      */
     public static void startActionPost(Context context, String resource, String username, String password) {
         Intent intent = new Intent(context, RestService.class);
@@ -57,8 +66,12 @@ public class RestService extends IntentService {
         context.startService(intent);
     }
 
-    /*
+    /**
      * Static help function to start a POST action with a cookie
+     *
+     * @param context   - context of the caller
+     * @param resource  - API base to use
+     * @param cookie    - Cookie to be provided in the request
      */
     public static void startActionPost(Context context, String resource, String cookie)
     {
@@ -71,8 +84,13 @@ public class RestService extends IntentService {
         context.startService(intent);
     }
 
-    /*
+    /**
      * Static help function to start a DELETE action
+     *
+     * @param context   - context of the caller
+     * @param resource  - API base to use
+     * @param username  - Username of requestor
+     * @param password  - Password of requestor
      */
     public static void startActionDelete(Context context, String resource, String username, String password)
     {
@@ -86,8 +104,11 @@ public class RestService extends IntentService {
         context.startService(intent);
     }
 
-    /*
+    /**
      * Static help function to start a GET action
+     *
+     * @param context   - context of the caller
+     * @param resource  - API base to use
      */
     public static void startActionGet(Context context, String resource)
     {
@@ -97,8 +118,12 @@ public class RestService extends IntentService {
         context.startService(i);
     }
 
-    /*
+    /**
      * Static help function to start a PUT action
+     * @param context   - context of the caller
+     * @param resource  - API base to use
+     * @param username  - Username of requestor
+     * @param password  - Password of requestor
      */
     public static void startActionPut(Context context, String resource, String username, String password)
     {
@@ -114,6 +139,11 @@ public class RestService extends IntentService {
      * End of static help functions
      ************************************************************************************/
 
+    /**
+     * Entry point. Called whenever RestService is started with startService()
+     *
+     * @param intent    - Intent provided by requestor
+     */
     @Override
     protected void onHandleIntent(Intent intent) {
         if (intent != null) {
@@ -133,6 +163,11 @@ public class RestService extends IntentService {
         }
     }
 
+    /**
+     * Handle GET reuqest
+     *
+     * @param intent    - Intent provided by requestor
+     */
     private void handleActionGet(Intent intent)
     {
         String resource = intent.getStringExtra(EXTRA_RESOURCE);
@@ -167,6 +202,11 @@ public class RestService extends IntentService {
         }
     }
 
+    /**
+     * Handle DELETE reuqest
+     *
+     * @param intent    - Intent provided by requestor
+     */
     private void handleActionDelete(Intent intent)
     {
         String resource = intent.getStringExtra(EXTRA_RESOURCE);
@@ -201,6 +241,11 @@ public class RestService extends IntentService {
         }
     }
 
+    /**
+     * Handle PUT reuqest
+     *
+     * @param intent    - Intent provided by requestor
+     */
     private void handleActionPut(Intent intent)
     {
         String resource = intent.getStringExtra(EXTRA_RESOURCE);
@@ -238,6 +283,11 @@ public class RestService extends IntentService {
         }
     }
 
+    /**
+     * Handle POST reuqest
+     *
+     * @param intent    - Intent provided by requestor
+     */
     private void handleActionPost(Intent intent)
     {
         String resource = intent.getStringExtra(EXTRA_RESOURCE);
@@ -316,6 +366,11 @@ public class RestService extends IntentService {
         return res.toString();
     }
 
+    /**
+     * Broadcast back body that has been received
+     *
+     * @param body  - body to be broadcast
+     */
     private void deliverBody(String body)
     {
         Intent i = new Intent(INTENT_FILTER);
@@ -323,6 +378,11 @@ public class RestService extends IntentService {
         LocalBroadcastManager.getInstance(this).sendBroadcast(i);
     }
 
+    /**
+     * Broadcast back response code that has been received
+     *
+     * @param code  - code to be broadcast
+     */
     private void deliverResponseCode(int code)
     {
         Intent i = new Intent(INTENT_FILTER);
@@ -330,6 +390,11 @@ public class RestService extends IntentService {
         LocalBroadcastManager.getInstance(this).sendBroadcast(i);
     }
 
+    /**
+     * Broadcast back cookie that has been received
+     *
+     * @param cookie - cookie to be broadcast
+     */
     private void deliverResponseCookie(String cookie)
     {
         Intent i = new Intent(INTENT_FILTER);
@@ -337,6 +402,13 @@ public class RestService extends IntentService {
         LocalBroadcastManager.getInstance(this).sendBroadcast(i);
     }
 
+
+    /**
+     * Static function that converts response codes to a human-readable string
+     *
+     * @param code  - code to be converted
+     * @return      - String that can be read
+     */
     public static String responseCodeHumanForm(int code)
     {
         switch(code) {

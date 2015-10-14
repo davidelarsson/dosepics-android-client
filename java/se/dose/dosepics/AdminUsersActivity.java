@@ -28,18 +28,22 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * An activity that handles the administration of users on the server
+ */
 public class AdminUsersActivity extends AppCompatActivity implements
         NewUserFragment.NewUserFragmentListener,
         UserInfoFragment.UserInfoFragmentListener,
         SwipeRefreshLayout.OnRefreshListener 	{
 
+    // FIXME: Change this!
     // Info about a user to be updated
     Map<String, String> userInfoToBeUpdated = null;
 
-    // Some info about ourselves
+    // Keep track of whether we have the administrator flag set for ourselves
     private boolean weAreAdmin = false;
 
-    // The base API point
+    // The URL of the base API
     private String resource;
 
     // Response code from RestService
@@ -48,11 +52,9 @@ public class AdminUsersActivity extends AppCompatActivity implements
     // Response responseBody from RestService
     private String responseBody;
 
-    // FIXME: Not sure this is the best way to handle a progress dialog
+    // FIXME: Not sure this is the best way to handle a progress dialog.
+    // FIXME: Maybe instantiate it more often instead?
     private ProgressDialog progressDialog = null;
-
-    // List of user info updates to be performed
-    private List<String> userInfoUpdates;
 
     // Keep track of what response we're waiting for from RestService
     private enum NetworkState {
@@ -65,6 +67,11 @@ public class AdminUsersActivity extends AppCompatActivity implements
         WAIT_AM_I_ADMIN };
     private NetworkState networkState = NetworkState.IDLE;
 
+    /**
+     * Called when the activity is starting. Main entry point of the Activity
+     *
+     * @param savedInstanceState - not used
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -87,6 +94,11 @@ public class AdminUsersActivity extends AppCompatActivity implements
         checkAmIAdmin();
     }
 
+    /**
+     * Cleanup before the activity is destroyed. We MUST unregister the RestService
+     * listener, or else the communication gets messed up the next time the Activity
+     * is restarted.
+     */
     @Override
     public void onDestroy()
     {
@@ -95,13 +107,18 @@ public class AdminUsersActivity extends AppCompatActivity implements
         LocalBroadcastManager.getInstance(this).unregisterReceiver(restReceiver);
     }
 
+    /**
+     * Call RestService to get a list of available users
+     */
     private void updateUserList() {
         networkState = NetworkState.WAIT_GET_USERS;
         setProgressBar("Getting users...");
         RestService.startActionGet(this, resource + "/users");
     }
 
-    // RestService uses broadcasts to send data back to the inquirer
+    /**
+     * RestService uses broadcasts to send data back to the inquirer
+     */
     private BroadcastReceiver restReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -115,14 +132,17 @@ public class AdminUsersActivity extends AppCompatActivity implements
         }
     };
 
-    // Called when the user does a swipe refresh on the list
+    /**
+     * Called when the user does a swipe to refresh the users list
+     */
+    @Override
     public void onRefresh()
     {
         updateUserList();
     }
 
-    /*
-     * RestService has sent us a body
+    /**
+     * RestService has sent us a body. Interpret it!
      */
     private void handleReceivedBody() {
         //Log.d("DOSESE", "handleReceivedBody(); " + responseBody);
@@ -139,13 +159,22 @@ public class AdminUsersActivity extends AppCompatActivity implements
         } else if(networkState == NetworkState.WAIT_AM_I_ADMIN) {
             handleUserAdminChecked();
         }
+
+        // Whatever we have received, we are not waiting for a refresh to complete.
+        // Yeah, this ought to be inside handleUsersReceived(). But sometimes,
+        // if the user is quick to click an item in the list while the list is being
+        // updated, the responses from RestService get a little mixed up.Just do a
+        // new refresh swipe!
+        //
+        // A more elegant solution would be to rewrite RestService to extend AsyncTask
+        SwipeRefreshLayout srl = (SwipeRefreshLayout) findViewById(R.id.swipe_container);
+        srl.setRefreshing(false);
     }
 
-    /*
-     * RestService has sent us a response code
+    /**
+     * RestService has sent us a response code. Interpret it!
      */
     private void handleReceivedResultCode() {
-        //Log.d("DOSESE", "handleReceivedResultCode(); " + responseCode);
         if (networkState == NetworkState.WAIT_NEW_USER) {
             if (responseCode == 201) {
                 Toast.makeText(this, "User created", Toast.LENGTH_SHORT).show();
@@ -188,8 +217,9 @@ public class AdminUsersActivity extends AppCompatActivity implements
         }
     }
 
-    /*
-     * Check whether the user has administrative privileges
+    /**
+     * Check whether the user has administrative privileges, and set the field
+     * variable accordingly
      */
     private void checkAmIAdmin()
     {
@@ -203,8 +233,9 @@ public class AdminUsersActivity extends AppCompatActivity implements
         RestService.startActionGet(getApplicationContext(), resource + "/users/" + user);
     }
 
-    /*
-     * Creating a dialog box telling the user of her restrictions
+    /**
+     * Creating a dialog box telling the user of her restrictions because she
+     * does not have the administrator flag set
      */
     private void handleUserAdminChecked()
     {
@@ -227,6 +258,10 @@ public class AdminUsersActivity extends AppCompatActivity implements
 
     }
 
+    /**
+     * Silly help function to show a dialog telling the user she does not
+     * have administrative rights
+     */
     private void showYouAreNotADminDialog()
     {
         AlertDialog.Builder adb = new AlertDialog.Builder(this);
@@ -237,8 +272,9 @@ public class AdminUsersActivity extends AppCompatActivity implements
         adb.create().show();
     }
 
-    /*
-     * Information about a user has been received
+    /**
+     * Information about a user has been received from RestService. Handle it
+     * by showing a dialog with a layout from UserInfoFragment
      */
     private void handleUserInfoReceived()
     {
@@ -253,6 +289,7 @@ public class AdminUsersActivity extends AppCompatActivity implements
         }catch (Exception e)
         {
             Toast.makeText(this, "Error in user list: " + e.toString(), Toast.LENGTH_SHORT).show();
+            //YAY
             return;
         } finally
         {
@@ -270,11 +307,13 @@ public class AdminUsersActivity extends AppCompatActivity implements
         uif.show(getFragmentManager(), "UserInfoFragment");
     }
 
-    /*
-     * RestService has sent us a list of users
+    /**
+     * A list of users has been received from RestService.
+     * Handle it by updating the list with this new information
      */
     private void handleUsersReceived() {
         //Log.d("DOSESE", "handleUsersReceived()");
+        ListView lv = (ListView) findViewById(android.R.id.list);
 
         try {
             JSONArray jsonUsers = new JSONArray(responseBody);
@@ -285,7 +324,7 @@ public class AdminUsersActivity extends AppCompatActivity implements
             }
 
             String[] userStrings = userList.toArray(new String[userList.size()]);
-            ListView lv = (ListView) findViewById(android.R.id.list);
+            //ListView lv = (ListView) findViewById(android.R.id.list);
             lv.setAdapter(new ArrayAdapter(this, android.R.layout.simple_list_item_1, userStrings));
 
             // If item is clicked, start UserInfoFragment with more information
@@ -307,16 +346,12 @@ public class AdminUsersActivity extends AppCompatActivity implements
         } finally {
             networkState = NetworkState.IDLE;
             setProgressBar("");
-
-            // In case the update was done through a Swipe Refresh, turn off
-            // the swipe indicator
-            SwipeRefreshLayout srl = (SwipeRefreshLayout) findViewById(R.id.swipe_container);
-            srl.setRefreshing(false);
         }
     }
 
-    /*
-     * User has decided to create a new user
+    /**
+     * User has decided to create a new user in UserInfoFragment. Do so by
+     * sending a request to RestService about this
      */
     public void onNewUserPositiveClick(String username, String name, String password, boolean isAdmin) {
 
@@ -346,18 +381,20 @@ public class AdminUsersActivity extends AppCompatActivity implements
         }
     }
 
-    /*
+    /**
      * User has canceled the New User dialog
+     *
+     * Do nothing.
      */
     public void onNewUSerNegativeClick() {
         //Toast.makeText(this, "No user created", Toast.LENGTH_SHORT).show();
     }
 
-    /*
+    /**
      * Help function to create and remove the progress bar
      *
-     * When called with a message, create a progress bar,
-     * when called with an empty string, remove progress bar
+     * @param msg - if an empty string (""), disable the progress bar.
+     *            - if contains a string, enable the progress with this string
      */
     private void setProgressBar(String msg)
     {
@@ -368,8 +405,9 @@ public class AdminUsersActivity extends AppCompatActivity implements
             progressDialog = ProgressDialog.show(this, "", msg, true);
     }
 
-    /*
-     * User has decided to delete a user
+    /**
+     * User has decided to delete a new user in UserInfoFragment. Do so by
+     * sending a request to RestService about this
      */
     public void onUserDeleted(String user) {
         networkState = NetworkState.WAIT_DELETE_USER;
@@ -383,8 +421,22 @@ public class AdminUsersActivity extends AppCompatActivity implements
         RestService.startActionDelete(this, resource + "/users/" + user, loginUsername, loginPassword);
     }
 
-    /*
+    /**
      * User has decided to update the information about a user
+     *
+     * FIXME: This is a little silly ought to be rewritten using queues instead
+     *
+     * The update of user items has to be done in steps, with one item at the
+     * time. At least for non-admin users, since if one were to update the
+     * entire user item at once, that would include the administrator flag,
+     * which for natural reasons the user herself is not allowed to update.
+     *
+     * Hence, we divide the update into several calls. The silly solution I use
+     * is to keep an array of fields to be updated together with three fields
+     * that are used for the actual call each time. These reserved fields are
+     * to be found in the array itemsToSkip in updateUserInfoItem.
+     *
+     * So yeah, queues would look a ton nicer.
      */
     public void onUserInfoUpdated(String user, String realName, String password, boolean isAdmin) {
         try {
@@ -422,6 +474,9 @@ public class AdminUsersActivity extends AppCompatActivity implements
         }
     }
 
+    /**
+     * FIXME: Rewrite this
+     */
     private void updateUserInfoItem()
     {
         // Fields to skip
@@ -433,6 +488,7 @@ public class AdminUsersActivity extends AppCompatActivity implements
         {
             networkState = NetworkState.IDLE;
             setProgressBar("");
+            Toast.makeText(getApplicationContext(), "User info updated!", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -455,15 +511,49 @@ public class AdminUsersActivity extends AppCompatActivity implements
         iterator.remove();
     }
 
-    /*
-     * User has decided to do nothing with the user
+    /**
+     * User has canceled the UserInfoDialog
+     *
+     * Do nothing
      */
     public void onUserInfoCancelClick()
     {
         // Do nothing
     }
 
+    /**
+     * Manual quote:
+     * "Prepare the Screen's standard options menu to be displayed. This is
+     * "called right before the menu is shown, every time it is shown. You
+     * "can use this method to efficiently enable/disable items or otherwise
+     * "dynamically modify the contents."
+     *
+     * We don't want the user to be able to press "New user" unless she has
+     * administrative rights
+     *
+     * @param menu  The menu to be prepared
+     * @return true
+     */
+    @Override
+    public boolean onPrepareOptionsMenu (Menu menu) {
 
+        if (weAreAdmin)
+            menu.getItem(0).setEnabled(true);
+        else
+            menu.getItem(0).setEnabled(false);
+
+        return true;
+    }
+
+    /**
+     * Manual Quote:
+     * "Initialize the contents of the Activity's standard options menu."
+     *
+     * We just supply the item(s) from the menu_admin_users XML file
+     *
+     * @param menu
+     * @return true
+     */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -471,7 +561,14 @@ public class AdminUsersActivity extends AppCompatActivity implements
         return true;
     }
 
-        @Override
+    /**
+     * Manual quote:
+     * "This hook is called whenever an item in your options menu is selected."
+     *
+     * @param item
+     * @return
+     */
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
@@ -487,14 +584,4 @@ public class AdminUsersActivity extends AppCompatActivity implements
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
-    public boolean onPrepareOptionsMenu (Menu menu) {
-
-        if (weAreAdmin)
-            menu.getItem(0).setEnabled(true);
-        else
-            menu.getItem(0).setEnabled(false);
-
-        return true;
-    }
 }

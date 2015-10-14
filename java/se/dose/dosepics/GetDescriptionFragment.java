@@ -6,8 +6,15 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.EditText;
 
+/**
+ * An invisible activity that shows a dialog asking the user to desribe the
+ * image just about to be shared
+ */
 public class GetDescriptionFragment extends DialogFragment {
 
     private EditText descriptionInput;
@@ -15,10 +22,9 @@ public class GetDescriptionFragment extends DialogFragment {
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
+
         descriptionInput = new EditText(getActivity());
-
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-
         builder.setPositiveButton("Submit",
                 new DialogInterface.OnClickListener() {
                     @Override
@@ -37,7 +43,9 @@ public class GetDescriptionFragment extends DialogFragment {
 
         builder.setTitle("Please enter a description:");
         builder.setView(descriptionInput);
-        return builder.create();
+        Dialog dialog = builder.create();
+        dialog.setCanceledOnTouchOutside(false);
+        return dialog;
     }
 
     public interface GetDescriptionDialogListener {

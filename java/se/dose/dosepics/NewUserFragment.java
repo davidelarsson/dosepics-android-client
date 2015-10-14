@@ -11,14 +11,24 @@ import android.view.WindowManager;
 import android.widget.CheckBox;
 import android.widget.EditText;
 
+/**
+ * Dialog Fragment that is used by AdminUsersActivity to let the user create
+ * a new user
+ */
 public class NewUserFragment extends DialogFragment {
 
     private NewUserFragmentListener listener;
 
+    // Required empty public constructor
     public NewUserFragment() {
-        // Required empty public constructor
     }
 
+    /**
+     * Create a custom dialog
+     *
+     * @param savedInstanceState    - not used
+     * @return                      - the created dialog
+     */
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         super.onCreateDialog(savedInstanceState);
@@ -58,12 +68,18 @@ public class NewUserFragment extends DialogFragment {
         return builder.create();
     }
 
+    /**
+     * Hook up listener
+     *
+     * @param activity
+     */
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         listener = (NewUserFragmentListener) activity;
     }
 
+    // Listener interface
     public interface NewUserFragmentListener {
         void onNewUserPositiveClick(String username, String name, String password, boolean isAdmin);
         void onNewUSerNegativeClick();

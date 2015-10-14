@@ -18,28 +18,47 @@ import android.widget.Toast;
 import org.json.JSONObject;
 import java.nio.ByteBuffer;
 
+/**
+ * UploadImageService reads image data from ImageDataHolder, divides this data
+ * into chunks and uses RestService to upload the chunks to the server
+ * according to the DOSEPICS REST API specification.
+ *
+ * If the image is large enough to be divided into chunks (as most images
+ * are), the cookie received after the first chunk has been successfully
+ * uploaded is sent along subsequent chunk uploads. This way we don't need
+ * to authenticate ourselves during each chunk upload.
+ */
 public class UploadImageService extends Service {
 
+    // The one and only action offered
     public static final String ACTION_UPLOAD = "se.dose.dosepics.action.UPLOAD";
 
+    // Extra arguments
     public static final String EXTRA_DESCRIPTION = "se.dose.dosepics.extra.DESCRIPTION";
     public static final String EXTRA_OWNER = "se.dose.dosepics.extra.OWNER";
 
+    // IDs of Notifications
     private static final int NOTE_ID_PROGRESS = 42;
     private static final int NOTE_ID_ERROR = 43;
+
+    // The only HTTP response codes that we wish to receive
     private static final int HTTP_OK = 200;
     private static final int HTTP_CREATED = 201;
+
+    // Size of chunks to divide image into
     private static final int CHUNK_SIZE = 500000;
 
+    // Current state
     private enum NetworkState { NETWORK_IDLE, NETWORK_WAIT_FOR_CREATED, NETWORK_WAIT_FOR_OK };
-
     NetworkState networkState = NetworkState.NETWORK_IDLE;
     private int chunks = 0;
     private int currentChunk = 0;
 
+    // Notification
     NotificationCompat.Builder foregroundBuilder = null;
     Notification foregroundNot = null;
 
+    // Information to be sent to RestService
     private String description = null;
     private String owner = null;
     private String cookie = null;
@@ -58,6 +77,9 @@ public class UploadImageService extends Service {
         context.startService(intent);
     }
 
+    /**
+     * Register the communication channel with RestService
+     */
     @Override
     public void onCreate() {
         super.onCreate();
@@ -76,17 +98,18 @@ public class UploadImageService extends Service {
 
             if (intent.hasExtra(RestService.REST_RESPONSE_CODE)) {
                 handleResponseCode(intent);
-            } else if (intent.hasExtra(RestService.REST_RESPONSE_COOKIE))
-            {
+            } else if (intent.hasExtra(RestService.REST_RESPONSE_COOKIE)) {
                 handleCookie(intent);
-            }
-            else if (intent.hasExtra(RestService.REST_RESPONSE_BODY))
-            {
+            } else if (intent.hasExtra(RestService.REST_RESPONSE_BODY)) {
                 handleResponseBody(intent);
             }
         }
     };
 
+    /**
+     * When the upload is done, update the notification in the action bar to
+     * reflect this status, wait 3000 ms, and then remove the notification
+     */
     private void createDoneNotification()
     {
         foregroundBuilder.setContentText("DONE!");
@@ -109,9 +132,13 @@ public class UploadImageService extends Service {
         stopSelf();
     }
 
+    /**
+     * If the upload failed for some reason, create a new notification that
+     * informs the user about it and leave it behind when the Service finishes
+     *
+     * @param code
+     */
     private void uploadFailed(int code) {
-        // If the upload failed for some reason, create a new notification
-        // that informs the user about it and leave it behind when the Service stops
         NotificationCompat.Builder foregroundBuilder =
                 new NotificationCompat.Builder(getApplicationContext()).
                         setContentTitle("DOSEPICS").
@@ -124,6 +151,14 @@ public class UploadImageService extends Service {
         stopSelf();
     }
 
+    /**
+     * Main entry point!
+     *
+     * @param intent    - Intent that contains information about how to proceed
+     * @param flags     - not used
+     * @param startId   - not used
+     * @return          - Irrelevant, the Service does not handle restarts
+     */
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null) {
@@ -137,25 +172,35 @@ public class UploadImageService extends Service {
         return START_NOT_STICKY;
     }
 
+    /**
+     * Not used
+     *
+     * @param intent    - not used
+     * @return          - null to indicate that binding is not supported
+     */
     @Override
     public IBinder onBind(Intent intent) {
         return null;
     }
 
+    /**
+     * Begin a new upload
+     */
     private void handleActionUpload() {
 
         // Calculate the number of chunks to be uploaded
         int len = ImageDataHolder.getData().length;
         chunks = len / CHUNK_SIZE + 1;
 
-        // Create progress bar to inform user that the image is uploading
+        // Create progress bar to inform user that the image is uploading.
+        // Make it indeterminate until the first chunk has actually been
+        // successfully uploaded
         foregroundBuilder =
                 new NotificationCompat.Builder(getApplicationContext()).
                         setProgress(0, 100, true).
                         setContentTitle("DOSEPICS").
                         setContentText("uploading...").
                         setSmallIcon(R.mipmap.ic_launcher);
-
         foregroundNot = foregroundBuilder.build();
         notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         currentChunk = 1;
@@ -165,9 +210,12 @@ public class UploadImageService extends Service {
         new Thread(bu).start();
     }
 
+    /**
+     * Handles the upload of a chunk
+     */
     private void uploadChunk() {
 
-        // The first chunk is a little different: besides image data it also
+        // The first chunk is a little special: besides image data it also
         // contains the owner of and information about the picture, along with
         // the total number of chunks
         if (currentChunk == 1) {
@@ -217,11 +265,13 @@ public class UploadImageService extends Service {
                 bb.put(ImageDataHolder.getData(), (currentChunk - 1) * CHUNK_SIZE, chunkSize);
                 String jsonChunk = Base64.encodeToString(bb.array(), Base64.DEFAULT);
                 jsonBody.put("image", jsonChunk);
+
                 // Store for RestService
                 BodyHolder.setData("");
                 BodyHolder.setData(jsonBody.toString());
 
-                // Non-first POST requests ignore authorization
+                // Non-first POST requests ignore authorization. Only the cookie
+                // is needed
                 SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
                 String resource = sp.getString("resource", "");
 
@@ -240,6 +290,13 @@ public class UploadImageService extends Service {
         }
     }
 
+    /**
+     * Handles a response code. If we have more chunks to upload, we wait for
+     * 200 (OK) and if we are done we wait for a 201 (Created). Anything else
+     * is a failure
+     *
+     * @param intent
+     */
     private void handleResponseCode(Intent intent)
     {
         int responseCode = intent.getIntExtra(RestService.REST_RESPONSE_CODE, 0);
@@ -273,24 +330,44 @@ public class UploadImageService extends Service {
         }
     }
 
+    /**
+     * Cleanup before the Service is destroyed. We MUST unregister the RestService
+     * listener, or else the communication gets messed up the next time the Service
+     * is restarted.
+     */
     @Override
     public void onDestroy()
     {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(restReceiver);
     }
 
+    /**
+     * Handles a cookie from RestService.
+     *
+     * Just saves it for future use
+     *
+     * @param intent
+     */
     private void handleCookie(Intent intent)
     {
         cookie = intent.getStringExtra(RestService.REST_RESPONSE_COOKIE);
         //Log.d("DOSESE", "Cookie received: " + cookie);
     }
 
+    /**
+     * A body has been received. This is not used
+     *
+     * @param intent
+     */
     private void handleResponseBody(Intent intent)
     {
         String body = intent.getStringExtra(RestService.REST_RESPONSE_BODY);
         //Log.d("DOSESE", "Body received: " + body);
     }
 
+    /**
+     * Simple class that deals with the upload in the background
+     */
     public class BackgroundUpload implements Runnable {
 
         public void run()
