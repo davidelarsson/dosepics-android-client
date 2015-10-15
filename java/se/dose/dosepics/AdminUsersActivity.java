@@ -25,7 +25,6 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -424,7 +423,7 @@ public class AdminUsersActivity extends AppCompatActivity implements
     /**
      * User has decided to update the information about a user
      *
-     * FIXME: This is a little silly ought to be rewritten using queues instead
+     * FIXME: This is a little silly and ought to be rewritten using queues instead
      *
      * The update of user items has to be done in steps, with one item at the
      * time. At least for non-admin users, since if one were to update the
@@ -463,7 +462,7 @@ public class AdminUsersActivity extends AppCompatActivity implements
             userInfoToBeUpdated.put("name", realName);
             userInfoToBeUpdated.put("pwd", password);
 
-            // The admin flag can only be updated if we are admin outselves
+            // The admin flag can only be updated if we are admin ourselves
             if(weAreAdmin)
                 userInfoToBeUpdated.put("admin", isAdmin ? "true" : "false");
 

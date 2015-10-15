@@ -1,4 +1,5 @@
 package se.dose.dosepics;
+
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -26,8 +27,8 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.BufferedReader;
@@ -45,6 +46,7 @@ import java.util.List;
  * First a list of images is being retrieved from the server, then a
  * PagerAdapter is being configured to use this info to retrieve individual
  * images.
+ *
  */
 public class ImageActivity extends AppCompatActivity {
 
@@ -185,11 +187,11 @@ public class ImageActivity extends AppCompatActivity {
     public void listOfImagesReceived(List<Integer> imageList)
     {
         adapter = new ImageCollectionPagerAdapter(getSupportFragmentManager());
-        adapter.imageResources = imageList;
+        adapter.init(imageList);
         viewPager = (ViewPager) findViewById(R.id.pager);
         viewPager.setAdapter(adapter);
 
-        // FIXME: This is debug, start at the end of the list
+        // Start by showing the latest uploaded image
         viewPager.setCurrentItem(imageList.size());
 
         // Keep two fragments alive on each side
@@ -201,22 +203,61 @@ public class ImageActivity extends AppCompatActivity {
      */
     public class ImageCollectionPagerAdapter extends FragmentStatePagerAdapter {
 
-        // The list of image resources
-        List<Integer> imageResources;
+        // A list containing the Fragments indexes that are currently alive
+        private List<Integer> currentlyActiveFragments = new LinkedList<>();
+
+        // Keep an array that points to all active Fragments. Fragment indexes
+        // that are currently not alive, are null in this array. This is made
+        // public so that updateAllActiveFragments() can access it when needed
+        public ImageFragment[] fragments;
+
+        // The list of image resources returned from the server
+        private List<Integer> imageResources;
 
         // Constructor needed for some reason
         public ImageCollectionPagerAdapter(FragmentManager fm) {
             super(fm);
         }
 
+        // Init is called when a list of users has been received
+        public void init(List<Integer> imageResources)
+        {
+            this.imageResources = imageResources;
+            fragments = new ImageFragment[imageResources.size()];
+
+            // FIXME: This is NOT needed... right?
+            for(int i = 0; i < imageResources.size(); i++)
+                fragments[i] = null;
+        }
+
         @Override
-        public Fragment getItem(int index) {
-            Fragment fragment = new ImageFragment();
+        public Object instantiateItem(ViewGroup container, int position)
+        {
+            fragments[position] = (ImageFragment) super.instantiateItem(container, position);
+            currentlyActiveFragments.add(position);
+            return fragments[position];
+        }
+
+        @Override
+        public void destroyItem(ViewGroup collection, int position, Object object) {
+            super.destroyItem(collection, position, object);
+            fragments[position] = null;
+            currentlyActiveFragments.remove(currentlyActiveFragments.indexOf(position));
+        }
+
+        @Override
+        public ImageFragment getItem(int index) {
+            fragments[index] = new ImageFragment();
             Bundle args = new Bundle();
             args.putInt(ImageFragment.IMAGE_INDEX, imageResources.get(index));
             args.putString(ImageFragment.RESOURCE, resource);
-            fragment.setArguments(args);
-            return fragment;
+            fragments[index].setArguments(args);
+            return fragments[index];
+        }
+
+        public ImageFragment myOwnGetItem(int index)
+        {
+            return fragments[index];
         }
 
         @Override
@@ -283,6 +324,17 @@ public class ImageActivity extends AppCompatActivity {
     }
 
     /**
+     * Update all Fragments that are currently active
+     */
+    private void updateAllActiveFragments()
+    {
+        for(int i = 0; i < adapter.fragments.length; i++) {
+            if(adapter.fragments[i] != null)
+                adapter.fragments[i].updateFragment();
+        }
+    }
+
+    /**
      * Fragment class for each image. This is where the fun stuff starts.
      *
      * Three things are loaded in turn from the server when the Fragment is
@@ -331,10 +383,6 @@ public class ImageActivity extends AppCompatActivity {
         // The currently shown image, be it thumbnail or real image
         Bitmap image;
 
-        // FIXME: I don't want these.
-        GetImage getImage;
-        GetImage getThumb;
-
         /**
          * Main entry of the Fragment, called when it is created.
          *
@@ -352,7 +400,7 @@ public class ImageActivity extends AppCompatActivity {
 
         /**
          * Called when the Fragment is being seen by the user. Used only for
-         * a single purpuse: to keep track of whether we are in fullscreen mode
+         * a single purpose: to keep track of whether we are in fullscreen mode
          * and hence should or should not view the information about the image
          * at the bottom
          *
@@ -387,9 +435,10 @@ public class ImageActivity extends AppCompatActivity {
             getActivity().getWindow().setAttributes(attr);
 
             // Start of network chain, begin by loading the thumbnail
-            getThumb = new GetImage();
-            getThumb.execute();
+            new GetImage().execute();
 
+            // We are still in mode.NONE, which will just put a progress bar
+            // on screen
             updateFragment();
             return rootView;
         }
@@ -467,12 +516,21 @@ public class ImageActivity extends AppCompatActivity {
             isLoadingRealImage = true;
 
             // Get the real image in the background
-            getImage = new GetImage();
-            getImage.execute();
+            new GetImage().execute();
         }
 
         /**
-         * Update the GUI
+         * This is called when the fullscreen state has changed and as such
+         * we need to update not only this Fragment, but also all other active
+         * fragments. Hence we need to take help from Activity.
+         */
+        private void updateAllFragments()
+        {
+            ((ImageActivity) getActivity()).updateAllActiveFragments();
+        }
+
+        /**
+         * Update the Fragment
          */
         private void updateFragment() {
 
@@ -488,17 +546,22 @@ public class ImageActivity extends AppCompatActivity {
             // If we haven't even received the thumbnail yet, just add a
             // progress bar and disable action bar
             if (mode == Mode.NONE) {
-                ab.hide();
-
-                // Add a text telling user what's going on
-                TextView tv = new TextView(getContext());
-                tv.setText("Loading thumbnail...");
-                rootView.addView(tv);
 
                 // Add a progress bar
                 ProgressBar progressBar = new ProgressBar(getContext());
                 progressBar.setIndeterminate(true);
-                rootView.addView(progressBar);
+
+                // Put it in the middle of the screen
+                RelativeLayout rl = new RelativeLayout(getContext());
+                RelativeLayout.LayoutParams progressBarLayout =
+                        new RelativeLayout.LayoutParams(
+                                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                                RelativeLayout.LayoutParams.WRAP_CONTENT);
+                progressBarLayout.addRule(RelativeLayout.CENTER_IN_PARENT);
+                progressBar.setLayoutParams(progressBarLayout);
+                rl.addView(progressBar);
+
+                rootView.addView(rl);
 
                 return;
             }
@@ -522,7 +585,7 @@ public class ImageActivity extends AppCompatActivity {
                     // Toggle full screen flag
                     ((ImageActivity) getActivity()).fullscreen =
                             !((ImageActivity) getActivity()).fullscreen;
-                    updateFragment();
+                    updateAllFragments();
 
                     // Also, if we haven't loaded the real image yet, start loading it immediately
                     if (mode == Mode.THUMB || mode == Mode.INFO)
@@ -611,7 +674,7 @@ public class ImageActivity extends AppCompatActivity {
                 // If we are already in fullscreen mode, do nothing
                 if (!isCancelled) {
                     ((ImageActivity) getActivity()).fullscreen = true;
-                    updateFragment();
+                    updateAllFragments();
                 }
 
             }
@@ -739,5 +802,4 @@ public class ImageActivity extends AppCompatActivity {
             }
         }
     }
-
 }
